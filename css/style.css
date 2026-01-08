@@ -682,6 +682,11 @@ main {
   border: none;
 }
 
+.text__error {
+  font-size: 12px;
+  color: tomato;
+}
+
 .text__hashtags {
   width: 450px;
 
