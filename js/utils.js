@@ -1,89 +1,61 @@
-const ALERT_SHOW_TIME = 5000;
+const ALERT_TIME = 5000;
 
-const alertStyles = {
-  zIndex : '100',
-  position : 'absolute',
-  left : '0',
-  top : '0',
-  right : '0',
-  padding : '10px 3px',
-  fontSize : '30px',
-  lineHeight : '36px',
-  textAlign : 'center',
-  backgroundColor : '#232321',
-  color: '#ffffff',
-};
+const getRandomInt = (minInt, maxInt) => {
+  const lower = Math.ceil(Math.min(Math.abs(minInt), Math.abs(maxInt)));
+  const upper = Math.floor(Math.max(Math.abs(minInt), Math.abs(maxInt)));
+  const result = Math.random() * (upper - lower + 1) + lower;
+  return Math.floor(result);
+}
 
-export const checkLength = (array, maxLength) => array.length <= maxLength;
+const getRandomElement = (elements) => {
+  return elements[getRandomInt(0, elements.length - 1)];
+}
 
-export const checkRepeats = (array) => {
-  const itemsInUpperCase = array.map((item) => item.toUpperCase());
-  const arrayNoRepeats = new Set(itemsInUpperCase);
-  return arrayNoRepeats.size === itemsInUpperCase.length;
-};
+const alertShow = (message) => {
+  const containerAlert = document.createElement('div');
+  containerAlert.style.position = 'absolute';
+  containerAlert.style.zIndex = '100';
+  containerAlert.style.right = '0';
+  containerAlert.style.left = '0';
+  containerAlert.style.padding = '10px 3px';
+  containerAlert.style.top = '0';
+  containerAlert.style.fontSize = '30px';
+  containerAlert.style.backgroundColor = 'red';
+  containerAlert.style.textAlign = 'center';
+  containerAlert.classList.add('data-error');
+  containerAlert.textContent = message;
 
-export const isEscapeKey = (evt) => evt.key === 'Escape';
-
-export const isEnterKey = (evt) => evt.key === 'Enter';
-
-export const removeLastCharacter = (string) => string ? string.slice(0, -1) : string;
-
-export const showAlert = (message) => {
-  const alertContainerElement = document.createElement('div');
-  Object.assign(alertContainerElement.style, alertStyles);
-  alertContainerElement.textContent = message;
-  document.body.append(alertContainerElement);
+  document.body.append(containerAlert);
 
   setTimeout(() => {
-    alertContainerElement.remove();
-  }, ALERT_SHOW_TIME);
-};
+    containerAlert.remove();
+  }, ALERT_TIME);
+}
 
-export const debounce = (callback, timeoutDelay = 500) => {
+const isKeyEsc = (evt) => {
+  return evt.key === 'Escape';
+}
+
+const Debounce = (callback, timeoutDelay = 500) => {
   let timeoutId;
 
   return (...rest) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => callback.apply(this, rest), timeoutDelay);
   };
-};
+}
 
-//Следующие 4 функции для работы с муковыми данными
+const Throttle = (callback, delayBetweenFrames) => {
+  let lastTime = 0;
 
-//Функция получения уникального идентификатора (автоинкремент)
-export const createIdGenerator = (start = 0) => {
-  let lastGeneratedId = start;
+  return (...rest) => {
+    const now = new Date();
 
-  return function() {
-    lastGeneratedId += 1;
-    return lastGeneratedId;
-  };
-};
-
-//Функция получения уникального идентификатора (начинает сначала при достижении заданного значения)
-export const createCircleGenerator = (maxCount) => {
-  let lastGeneratedId = 0;
-
-  return function() {
-    if(lastGeneratedId >= maxCount) {
-      lastGeneratedId = 0;
-      return lastGeneratedId++;
+    if (now - lastTime >= delayBetweenFrames) {
+      callback.apply(this, rest);
+      lastTime = now;
     }
-    return lastGeneratedId++;
   };
-};
+}
 
-//Функция получения случайного значения в заданных пределах
-export const getRandomInteger = (min, max) => {
-  const lower = Math.ceil(Math.min(Math.abs(min), Math.abs(max)));
-  const upper = Math.floor(Math.max(Math.abs(min), Math.abs(max)));
-  const result = Math.random() * (upper - lower + 1) + lower;
-
-  return Math.floor(result);
-};
-
-//Функция получения случайного элемента массива
-export const getRandomArrayElement = (elements) => (
-  elements[getRandomInteger(0, elements.length - 1)]
-);
-
+export { getRandomInt, getRandomElement, alertShow, isKeyEsc, Debounce, Throttle };
