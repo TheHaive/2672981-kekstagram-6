@@ -1,42 +1,102 @@
-import {checkLength, checkRepeats} from './utils.js';
+const PATTERN_HASHTAG = /^#[a-zа-яё0-9]{1,19}$/i;
+const MAX_HASHTAGS = 5;
+const MAX_LENGTH_HASHTAG = 20;
+const MAX_LENGTH_COMMENT = 140;
 
-const COMMENT_MAX_LENGTH = 140;
-const HASHTAG_MAX_LENGTH = 19;
-const HASHTAG_REGEX = /^#[a-zа-яё0-9]{1,19}$/i;
-const HASHTAG_MAX_QUANTITY = 5;
-const MESSAGES = {
-  hasHash: `Правило: первый символ # далее буквы и числа но не более ${HASHTAG_MAX_LENGTH} шт.`,
-  maxQuantity: `Максимально может быть ${HASHTAG_MAX_QUANTITY} хэштегов`,
-  noRepetitions: 'Хэштеги не могут повторяться',
-  maxLengthComment: `Максимальная длина комментария ${COMMENT_MAX_LENGTH} символов`
-};
+const hashtagsCheck = (value) => {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) {
+    return true;
+  }
 
-const uploadFormElement = document.querySelector('#upload-select-image');
-const hashtagInputElement = uploadFormElement.querySelector('[name="hashtags"]');
-const commentInputElement = uploadFormElement.querySelector('[name="description"]');
+  const hashtags = trimmedValue.toLowerCase().split(' ').filter(Boolean);
 
-const validator = new Pristine(uploadFormElement, {
-  classTo: 'img-upload__field-wrapper',
-  errorTextParent: 'img-upload__field-wrapper',
-  errorTextTag: 'div',
-  errorTextClass: 'text__error'
-});
+  if (hashtags.length > MAX_HASHTAGS) {
+    return false;
+  }
+  for (let i = 0; i < hashtags.length; i++) {
+    const tag = hashtags[i];
+    if (tag === '#') {
+      return false;
+    }
+    if (!PATTERN_HASHTAG.test(tag)) {
+      return false;
+    }
+    for (let j = i + 1; j < hashtags.length; j++) {
+      if (tag === hashtags[j]) {
+        return false;
+      }
+    }
+  }
 
-const onCheckHasHash = () => hashtagInputElement.value !== '' ? hashtagInputElement.value
-  .trim()
-  .split(' ')
-  .filter(Boolean)
-  .every((hashtag) => HASHTAG_REGEX.test(hashtag)) : true;
-const onCheckMaxQuantity = () => checkLength(hashtagInputElement.value.split(' ').filter(Boolean), HASHTAG_MAX_QUANTITY);
-const onCheckNoRepetitions = () => checkRepeats(hashtagInputElement.value.split(' ').filter(Boolean));
-const onCheckMaxLengthComment = () => checkLength(commentInputElement.value, COMMENT_MAX_LENGTH);
+  return true;
+}
 
-export const initValidation = () => {
-  validator.addValidator(hashtagInputElement, onCheckHasHash, MESSAGES.hasHash);
-  validator.addValidator(hashtagInputElement, onCheckMaxQuantity, MESSAGES.maxQuantity);
-  validator.addValidator(hashtagInputElement, onCheckNoRepetitions, MESSAGES.noRepetitions);
-  validator.addValidator(commentInputElement, onCheckMaxLengthComment, MESSAGES.maxLengthComment);
-};
+const getHashtagError = (value) => {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) {
+    return '';
+  }
 
-export const validateValues = () => validator.validate();
-export const resetValidator = () => validator.reset();
+  const hashtags = trimmedValue.toLowerCase().split(' ').filter(Boolean);
+
+  if (hashtags.length > MAX_HASHTAGS) {
+    return `Максимум ${MAX_HASHTAGS} хэш-тегов`;
+  }
+  for (const tag of hashtags) {
+    if (tag === '#') {
+      return 'Хэш-тег не может быть только #';
+    }
+    if (tag.length > MAX_LENGTH_HASHTAG) {
+      return `Максимальная длина ${MAX_LENGTH_HASHTAG} символов`;
+    }
+    if (!PATTERN_HASHTAG.test(tag)) {
+      return 'Хэш-тег должен начинаться с # и содержать буквы/цифры';
+    }
+  }
+
+  const uniqueTags = new Set(hashtags);
+  if (uniqueTags.size !== hashtags.length) {
+    return 'Хэш-теги не должны повторяться';
+  }
+
+  return '';
+}
+
+const commentCheck = (value) => {
+  return value.length <= MAX_LENGTH_COMMENT;
+}
+
+const validationInit = (formElement) => {
+  const pristine = new Pristine(formElement, {
+    classTo: 'img-upload__field-wrapper',
+    errorClass: 'img-upload__field-wrapper--invalid',
+    successClass: 'img-upload__field-wrapper--valid',
+    errorTextParent: 'img-upload__field-wrapper',
+    errorTextTag: 'div',
+    errorTextClass: 'pristine-error'
+  });
+
+  pristine.addValidator(
+    formElement.querySelector('.text__hashtags'),
+    hashtagsCheck,
+    getHashtagError
+  );
+
+  pristine.addValidator(
+    formElement.querySelector('.text__description'),
+    commentCheck,
+    `Комментарий не должен превышать ${MAX_LENGTH_COMMENT} символов`
+  );
+
+  const inputs = formElement.querySelectorAll('.text__hashtags, .text__description');
+  inputs.forEach((input) => {
+    input.addEventListener('input', () => {
+      pristine.validate(input);
+    });
+  });
+
+  return pristine;
+}
+
+export { validationInit };

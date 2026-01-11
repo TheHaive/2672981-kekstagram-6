@@ -1,4 +1,5 @@
 const BASE_URL = 'https://29.javascript.htmlacademy.pro/kekstagram';
+
 const Route = {
   GET_DATA: '/data',
   SEND_DATA: '/',
@@ -12,6 +13,7 @@ const ErrorText = {
   SEND_DATA: 'Не удалось отправить данные. Попробуйте ещё раз',
 };
 
+
 const load = (route, errorText, method = Method.GET, body = null) =>
   fetch(`${BASE_URL}${route}`, {method, body})
     .then((response) => {
@@ -24,5 +26,8 @@ const load = (route, errorText, method = Method.GET, body = null) =>
       throw new Error(errorText);
     });
 
-export const getData = () => load(Route.GET_DATA, ErrorText.GET_DATA);
-export const sendData = (body) => load(Route.SEND_DATA, ErrorText.SEND_DATA, Method.POST, body);
+
+const getData = () => load(Route.GET_DATA, ErrorText.GET_DATA);
+const sendData = (body) => load(Route.SEND_DATA, ErrorText.SEND_DATA, Method.POST, body);
+
+export {getData, sendData};

@@ -1,38 +1,18 @@
-import {getData} from './api.js'; 
-import {getItems} from './data.js';
-import {initGallery} from './gallery.js';
-import {debounce, showAlert} from './utils.js';
-import {changeFilter, showFilter} from './filter.js';
-import {setState, getState} from './state.js';
-import {renderSmallItems} from './small-items.js';
-import {hideFormUpload, initFormUpload} from './form-upload.js';
-import {initValidation} from './validation.js';
+import { miniaturesRender } from './thumbnails.js';
+import { getData } from './api.js';
+import { alertShow } from './utils.js';
+import { formSetup } from './upload-form.js';
+import { filtersInit } from './filter.js';
+import * as validationModule from './validation.js';
+import * as effectsModule from './scale.js';
 
-const RENDER_DELAY = 500;
-setState(getItems());
-try {
-  renderSmallItems(getState());
-  initGallery(getState());
-  changeFilter(debounce(() => renderSmallItems(getState()), RENDER_DELAY));
-  showFilter();
-} catch (err) {
-  showAlert(err.message);
-}
-initFormUpload(initValidation, hideFormUpload);
-
+formSetup(validationModule, effectsModule);
 
 getData()
-  .then((items) => {
-    setState(items);
-  })
-  .then(() => {
-    renderSmallItems(getState());
-    initGallery(getState());
-    changeFilter(debounce(() => renderSmallItems(getState()), RENDER_DELAY));
-    showFilter();
+  .then((pictures) => {
+    miniaturesRender(pictures);
+    filtersInit(pictures);
   })
   .catch((err) => {
-    showAlert(err.message);
+    alertShow(err.message);
   });
-
-initFormUpload(initValidation, hideFormUpload);
