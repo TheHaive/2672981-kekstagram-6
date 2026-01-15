@@ -1,5 +1,12 @@
 // Точка входа приложения
 import { photos } from '.data.js';
+// В вашем основном файле (например, main.js)
+import { initThumbnails } from './thumbnail-renderer.js';
+
+// Инициализируем отрисовку миниатюр при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+  initThumbnails();
+});
 
 // Экспортируем данные для использования в других модулях (если потребуется)
 export { photos };
