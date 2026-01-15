@@ -4,6 +4,22 @@ import { photos } from '.data.js';
 import { initThumbnails } from './thumbnail-renderer.js';
 import { openBigPicture, initBigPicture } from './big-picture.js';
 import { initFormValidation } from './js/form-validation.js';
+import { initImageEditor, resetEditor } from './js/image-editor.js';
+import { closeForm } from './js/form-validation.js';
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+  initImageEditor();
+
+  // Интеграция с закрытием формы
+  const originalCloseForm = closeForm;
+  window.closeForm = () => {
+    resetEditor(); // Сбрасываем редактор
+    originalCloseForm(); // Вызываем оригинальную функцию
+  };
+
+  console.log('Редактор изображения готов к работе');
+});
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
