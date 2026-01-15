@@ -6,6 +6,24 @@ import { openBigPicture, initBigPicture } from './big-picture.js';
 import { initFormValidation } from './js/form-validation.js';
 import { initImageEditor, resetEditor } from './js/image-editor.js';
 import { closeForm } from './js/form-validation.js';
+import { renderPhotos } from './render.js';
+import { initFormHandlers } from './form.js';
+
+// Инициализация приложения
+const initApp = () => {
+  // Загружаем и отрисовываем фотографии
+  renderPhotos();
+
+  // Инициализируем обработчики формы
+  initFormHandlers();
+
+  // Можно добавить обработку обновления фотографий по таймеру или событию
+  // Например, обновлять каждые 30 секунд
+  // setInterval(renderPhotos, 30000);
+};
+
+// Запускаем приложение после загрузки DOM
+document.addEventListener('DOMContentLoaded', initApp);
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
