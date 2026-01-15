@@ -1,42 +1,50 @@
-// Константы для генерации данных
-export const NAMES = [
-  'Артём', 'Мария', 'Иван', 'Анна', 'Дмитрий',
-  'Елена', 'Сергей', 'Ольга', 'Алексей', 'Наталья'
-];
+const API_URL = {
+  GET: 'https://29.javascript.htmlacademy.pro/kekstagram/data',
+  POST: 'https://29.javascript.htmlacademy.pro/kekstagram',
+};
 
-export const MESSAGES = [
-  'Всё отлично!',
-  'В целом всё неплохо. Но не всё.',
-  'Когда вы делаете фотографию, хорошо бы убирать палец из кадра. В конце концов это просто непрофессионально.',
-  'Моя бабушка случайно чихнула с фотоаппаратом в руках и у неё получилась фотография лучше.',
-  'Я поскользнулся на банановой кожуре и уронил фотоаппарат на кота и у меня получилась фотография лучше.',
-  'Лица у людей на фотке перекошены, как будто их избивают. Как можно было поймать такой неудачный момент?!'
-];
+const SCALE = {
+  MIN: 25,
+  MAX: 100,
+  STEP: 25,
+  DEFAULT: 100,
+};
 
-export const DESCRIPTIONS = [
-  'Красивый закат на море',
-  'Мой пушистый кот',
-  'Горный пейзаж',
-  'Вкусный домашний обед',
-  'Путешествие по Европе',
-  'Зимняя сказка',
-  'Летний отдых',
-  'Архитектура старого города',
-  'Цветущий сад',
-  'Ночной город',
-  'Море и пальмы',
-  'Семейный праздник',
-  'Спортивные достижения',
-  'Любимая книга',
-  'Кофе утром',
-  'Прогулка в лесу',
-  'Концерт живой музыки',
-  'Фестиваль воздушных шаров',
-  'Рассвет в горах',
-  'Уличное искусство',
-  'Традиционная кухня',
-  'Исторический памятник',
-  'Домашний питомец',
-  'Город с высоты',
-  'Дружеская встреча'
-];
+const FILE_TYPES = ['jpg', 'jpeg', 'png'];
+
+const EFFECTS = {
+  none: { filter: 'none', unit: '', min: 0, max: 100, step: 1 },
+  chrome: { filter: 'grayscale', unit: '', min: 0, max: 1, step: 0.1 },
+  sepia: { filter: 'sepia', unit: '', min: 0, max: 1, step: 0.1 },
+  marvin: { filter: 'invert', unit: '%', min: 0, max: 100, step: 1 },
+  phobos: { filter: 'blur', unit: 'px', min: 0, max: 3, step: 0.1 },
+  heat: { filter: 'brightness', unit: '', min: 1, max: 3, step: 0.1 },
+};
+
+const HASHTAG = {
+  MAX_COUNT: 5,
+  MAX_LENGTH: 20,
+  REGEX: /^#[A-Za-zА-Яа-яЁё0-9]{1,19}$/,
+};
+
+const COMMENT = {
+  MAX_LENGTH: 140,
+};
+
+const RANDOM_PHOTOS_COUNT = 10;
+
+const DEBOUNCE_DELAY = 500;
+
+const RENDER_DELAY = 500;
+
+export {
+  API_URL,
+  SCALE,
+  FILE_TYPES,
+  EFFECTS,
+  HASHTAG,
+  COMMENT,
+  RANDOM_PHOTOS_COUNT,
+  DEBOUNCE_DELAY,
+  RENDER_DELAY,
+};

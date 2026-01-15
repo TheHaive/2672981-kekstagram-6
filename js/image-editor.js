@@ -1,306 +1,233 @@
-import noUiSlider from '/vendor/nouislider/nouislider.min.js';
-import '/vendor/nouislider/nouislider.min.css';
+import {SCALE, EFFECTS, HASHTAG, COMMENT} from './constants.js';
+import {isEscapeKey} from './utils.js';
+import {isValidFileType} from './image-utils.js';
+import {uploadPhoto} from './api.js';
+import {showSuccessMessage, showErrorMessage} from './messages.js';
 
-const SCALE_STEP = 25;
-const MIN_SCALE = 25;
-const MAX_SCALE = 100;
-const DEFAULT_SCALE = 100;
+const imgUploadForm = document.querySelector('.img-upload__form');
+const imgUploadOverlay = imgUploadForm.querySelector('.img-upload__overlay');
+const imgUploadInput = imgUploadForm.querySelector('.img-upload__input');
+const imgUploadCancel = imgUploadForm.querySelector('.img-upload__cancel');
+const imgUploadPreview = imgUploadForm.querySelector('.img-upload__preview img');
+const scaleControlValue = imgUploadForm.querySelector('.scale__control--value');
+const scaleControlSmaller = imgUploadForm.querySelector('.scale__control--smaller');
+const scaleControlBigger = imgUploadForm.querySelector('.scale__control--bigger');
+const effectsList = imgUploadForm.querySelector('.effects__list');
+const effectLevelContainer = imgUploadForm.querySelector('.img-upload__effect-level');
+const effectLevelValue = imgUploadForm.querySelector('.effect-level__value');
+const effectLevelSlider = imgUploadForm.querySelector('.effect-level__slider');
+const hashtagsInput = imgUploadForm.querySelector('.text__hashtags');
+const commentInput = imgUploadForm.querySelector('.text__description');
+const imgUploadSubmit = imgUploadForm.querySelector('.img-upload__submit');
+const body = document.body;
 
-const EFFECTS = {
-  none: {
-    min: 0,
-    max: 100,
-    step: 1,
-    unit: '',
-    filter: 'none'
-  },
-  chrome: {
-    min: 0,
-    max: 1,
-    step: 0.1,
-    unit: '',
-    filter: 'grayscale'
-  },
-  sepia: {
-    min: 0,
-    max: 1,
-    step: 0.1,
-    unit: '',
-    filter: 'sepia'
-  },
-  marvin: {
-    min: 0,
-    max: 100,
-    step: 1,
-    unit: '%',
-    filter: 'invert'
-  },
-  phobos: {
-    min: 0,
-    max: 3,
-    step: 0.1,
-    unit: 'px',
-    filter: 'blur'
-  },
-  heat: {
-    min: 1,
-    max: 3,
-    step: 0.1,
-    unit: '',
-    filter: 'brightness'
-  }
-};
-
-const form = document.querySelector('.img-upload__form');
-const imagePreview = form.querySelector('.img-upload__preview img');
-const scaleInput = form.querySelector('.scale__control--value');
-const scaleSmallerButton = form.querySelector('.scale__control--smaller');
-const scaleBiggerButton = form.querySelector('.scale__control--bigger');
-const effectLevelContainer = form.querySelector('.img-upload__effect-level');
-const effectLevelSlider = form.querySelector('.effect-level__slider');
-const effectLevelValue = form.querySelector('.effect-level__value');
-const effectsList = form.querySelector('.effects__list');
-const effectNoneInput = form.querySelector('#effect-none');
-
-let currentScale = DEFAULT_SCALE;
+let scale = SCALE.DEFAULT;
 let currentEffect = 'none';
+let pristine;
 
-// Функция для обновления масштаба изображения
+// Масштаб
 const updateScale = () => {
-  // Обновляем значение в поле ввода
-  scaleInput.value = `${currentScale}%`;
+  scaleControlValue.value = `${scale}%`;
+  imgUploadPreview.style.transform = `scale(${scale / 100})`;
+};
 
-  // Применяем масштаб к изображению
-  imagePreview.style.transform = `scale(${currentScale / 100})`;
-
-  // Записываем значение в скрытое поле для отправки на сервер
-  const scaleHiddenInput = form.querySelector('input[name="scale"]') ||
-    document.createElement('input');
-  if (!form.querySelector('input[name="scale"]')) {
-    scaleHiddenInput.type = 'hidden';
-    scaleHiddenInput.name = 'scale';
-    scaleHiddenInput.value = currentScale;
-    form.appendChild(scaleHiddenInput);
-  } else {
-    scaleHiddenInput.value = currentScale;
+const onScaleControlSmallerClick = () => {
+  if (scale > SCALE.MIN) {
+    scale -= SCALE.STEP;
+    updateScale();
   }
 };
 
-// Обработчики кнопок масштаба
-const onScaleSmallerClick = () => {
-  currentScale = Math.max(currentScale - SCALE_STEP, MIN_SCALE);
-  updateScale();
+const onScaleControlBiggerClick = () => {
+  if (scale < SCALE.MAX) {
+    scale += SCALE.STEP;
+    updateScale();
+  }
 };
 
-const onScaleBiggerClick = () => {
-  currentScale = Math.min(currentScale + SCALE_STEP, MAX_SCALE);
-  updateScale();
+// Эффекты - инициализация слайдера
+let slider;
+
+const initSlider = () => {
+  slider = noUiSlider.create(effectLevelSlider, {
+    range: {
+      min: 0,
+      max: 100,
+    },
+    start: 100,
+    step: 1,
+    connect: 'lower',
+  });
 };
 
-// Функция для сброса эффектов
-const resetEffects = () => {
-  currentEffect = 'none';
-  imagePreview.style.filter = 'none';
+const hideSlider = () => {
   effectLevelContainer.classList.add('hidden');
-
-  // Выбираем радио-кнопку "Оригинал"
-  effectNoneInput.checked = true;
-
-  // Сбрасываем значение слайдера
-  if (effectLevelSlider.noUiSlider) {
-    effectLevelSlider.noUiSlider.set(EFFECTS.none.max);
-  }
-
-  // Очищаем скрытое поле эффекта
-  const effectHiddenInput = form.querySelector('input[name="effect"]');
-  if (effectHiddenInput) {
-    effectHiddenInput.value = 'none';
-  }
+  imgUploadPreview.style.filter = 'none';
 };
 
-// Функция для инициализации слайдера
-const initEffectSlider = () => {
-  if (effectLevelSlider.noUiSlider) {
-    effectLevelSlider.noUiSlider.destroy();
-  }
+const showSlider = () => {
+  effectLevelContainer.classList.remove('hidden');
+};
 
-  const effect = EFFECTS[currentEffect];
-
-  // Скрываем слайдер для эффекта "none"
+const updateEffect = () => {
   if (currentEffect === 'none') {
-    effectLevelContainer.classList.add('hidden');
+    hideSlider();
     return;
   }
 
-  effectLevelContainer.classList.remove('hidden');
+  showSlider();
+  const effect = EFFECTS[currentEffect];
 
-  noUiSlider.create(effectLevelSlider, {
+  slider.updateOptions({
     range: {
       min: effect.min,
-      max: effect.max
+      max: effect.max,
     },
     start: effect.max,
     step: effect.step,
-    connect: 'lower'
   });
 
-  // Обработчик обновления слайдера
-  effectLevelSlider.noUiSlider.on('update', (values, handle) => {
-    const value = values[handle];
+  const onSliderUpdate = () => {
+    const value = slider.get();
     effectLevelValue.value = value;
+    imgUploadPreview.style.filter = `${effect.filter}(${value}${effect.unit})`;
+  };
 
-    // Обновляем скрытое поле для отправки на сервер
-    const effectValueHiddenInput = form.querySelector('input[name="effect_value"]') ||
-      document.createElement('input');
-    if (!form.querySelector('input[name="effect_value"]')) {
-      effectValueHiddenInput.type = 'hidden';
-      effectValueHiddenInput.name = 'effect_value';
-      effectValueHiddenInput.value = value;
-      form.appendChild(effectValueHiddenInput);
-    } else {
-      effectValueHiddenInput.value = value;
-    }
-
-    // Применяем эффект к изображению
-    applyEffect(value);
-  });
+  slider.off('update');
+  slider.on('update', onSliderUpdate);
+  onSliderUpdate();
 };
 
-// Функция для применения эффекта к изображению
-const applyEffect = (value) => {
-  const effect = EFFECTS[currentEffect];
+const onEffectsListChange = (evt) => {
+  if (evt.target.name === 'effect') {
+    currentEffect = evt.target.value;
+    updateEffect();
+  }
+};
 
-  if (currentEffect === 'none') {
-    imagePreview.style.filter = 'none';
+// Валидация хэш-тегов
+const validateHashtags = (value) => {
+  if (value.trim() === '') {
+    return true;
+  }
+  const hashtags = value.trim().split(/\s+/);
+  if (hashtags.length > HASHTAG.MAX_COUNT) {
+    return false;
+  }
+  const seen = new Set();
+  for (const tag of hashtags) {
+    if (!HASHTAG.REGEX.test(tag)) {
+      return false;
+    }
+    const lowerTag = tag.toLowerCase();
+    if (seen.has(lowerTag)) {
+      return false;
+    }
+    seen.add(lowerTag);
+  }
+  return true;
+};
+
+// Валидация комментария
+const validateComment = (value) => value.length <= COMMENT.MAX_LENGTH;
+
+// Pristine
+const initPristine = () => {
+  pristine = new Pristine(imgUploadForm, {
+    classTo: 'img-upload__field-wrapper',
+    errorTextParent: 'img-upload__field-wrapper',
+    errorTextClass: 'img-upload__error-text',
+  });
+
+  pristine.addValidator(hashtagsInput, validateHashtags, 'Некорректные хэш-теги');
+  pristine.addValidator(commentInput, validateComment, `Длина комментария не более ${COMMENT.MAX_LENGTH} символов`);
+};
+
+// Открытие/закрытие формы
+const openImageEditor = () => {
+  imgUploadOverlay.classList.remove('hidden');
+  body.classList.add('modal-open');
+  document.addEventListener('keydown', onDocumentKeydown);
+  scale = SCALE.DEFAULT;
+  updateScale();
+  currentEffect = 'none';
+  updateEffect();
+  initPristine();
+};
+
+const closeImageEditor = () => {
+  imgUploadOverlay.classList.add('hidden');
+  body.classList.remove('modal-open');
+  document.removeEventListener('keydown', onDocumentKeydown);
+  imgUploadForm.reset();
+  if (pristine) {
+    pristine.reset();
+  }
+};
+
+const onImgUploadInputChange = () => {
+  const file = imgUploadInput.files[0];
+  if (file && isValidFileType(file)) {
+    const url = URL.createObjectURL(file);
+    imgUploadPreview.src = url;
+
+    // Инициализируем слайдер только при первом открытии
+    if (!slider) {
+      initSlider();
+    }
+
+    openImageEditor();
+  }
+};
+
+const onImgUploadCancelClick = () => {
+  closeImageEditor();
+};
+
+const onDocumentKeydown = (evt) => {
+  if (isEscapeKey(evt) && !evt.target.closest('.text__hashtags') && !evt.target.closest('.text__description')) {
+    evt.preventDefault();
+    closeImageEditor();
+  }
+};
+
+// Отправка формы
+const blockSubmitButton = () => {
+  imgUploadSubmit.disabled = true;
+  imgUploadSubmit.textContent = 'Отправляю...';
+};
+
+const unblockSubmitButton = () => {
+  imgUploadSubmit.disabled = false;
+  imgUploadSubmit.textContent = 'Опубликовать';
+};
+
+const onImgUploadFormSubmit = async (evt) => {
+  evt.preventDefault();
+  if (!pristine.validate()) {
     return;
   }
-
-  let filterValue;
-  switch (currentEffect) {
-    case 'chrome':
-      filterValue = `grayscale(${value})`;
-      break;
-    case 'sepia':
-      filterValue = `sepia(${value})`;
-      break;
-    case 'marvin':
-      filterValue = `invert(${value}%)`;
-      break;
-    case 'phobos':
-      filterValue = `blur(${value}px)`;
-      break;
-    case 'heat':
-      filterValue = `brightness(${value})`;
-      break;
-    default:
-      filterValue = 'none';
-  }
-
-  imagePreview.style.filter = filterValue;
-
-  // Обновляем скрытое поле эффекта
-  const effectHiddenInput = form.querySelector('input[name="effect"]') ||
-    document.createElement('input');
-  if (!form.querySelector('input[name="effect"]')) {
-    effectHiddenInput.type = 'hidden';
-    effectHiddenInput.name = 'effect';
-    effectHiddenInput.value = currentEffect;
-    form.appendChild(effectHiddenInput);
-  } else {
-    effectHiddenInput.value = currentEffect;
+  blockSubmitButton();
+  try {
+    const formData = new FormData(imgUploadForm);
+    await uploadPhoto(formData);
+    closeImageEditor();
+    showSuccessMessage();
+  } catch (error) {
+    showErrorMessage();
+  } finally {
+    unblockSubmitButton();
   }
 };
 
-// Обработчик изменения эффекта
-const onEffectChange = (evt) => {
-  if (evt.target.matches('input[type="radio"][name="effect"]')) {
-    currentEffect = evt.target.value;
-
-    // Сбрасываем слайдер к начальному значению
-    const effect = EFFECTS[currentEffect];
-
-    // Инициализируем или обновляем слайдер
-    if (currentEffect === 'none') {
-      effectLevelContainer.classList.add('hidden');
-      imagePreview.style.filter = 'none';
-
-      // Обновляем скрытые поля
-      const effectHiddenInput = form.querySelector('input[name="effect"]');
-      const effectValueHiddenInput = form.querySelector('input[name="effect_value"]');
-
-      if (effectHiddenInput) {
-        effectHiddenInput.value = 'none';
-      }
-      if (effectValueHiddenInput) {
-        effectValueHiddenInput.value = '';
-      }
-    } else {
-      effectLevelContainer.classList.remove('hidden');
-
-      // Если слайдер уже создан, обновляем его настройки
-      if (effectLevelSlider.noUiSlider) {
-        effectLevelSlider.noUiSlider.updateOptions({
-          range: {
-            min: effect.min,
-            max: effect.max
-          },
-          start: effect.max,
-          step: effect.step
-        });
-      } else {
-        initEffectSlider();
-      }
-
-      // Применяем эффект с максимальным значением
-      applyEffect(effect.max);
-    }
-  }
-};
-
-// Функция для сброса всех настроек редактора
-const resetEditor = () => {
-  // Сбрасываем масштаб
-  currentScale = DEFAULT_SCALE;
-  updateScale();
-
-  // Сбрасываем эффекты
-  resetEffects();
-
-  // Сбрасываем скрытые поля
-  const scaleHiddenInput = form.querySelector('input[name="scale"]');
-  const effectHiddenInput = form.querySelector('input[name="effect"]');
-  const effectValueHiddenInput = form.querySelector('input[name="effect_value"]');
-
-  if (scaleHiddenInput) {
-    scaleHiddenInput.value = '';
-  }
-  if (effectHiddenInput) {
-    effectHiddenInput.value = '';
-  }
-  if (effectValueHiddenInput) {
-    effectValueHiddenInput.value = '';
-  }
-};
-
-// Инициализация редактора изображения
+// Инициализация
 const initImageEditor = () => {
-  // Инициализируем масштаб
-  updateScale();
-
-  // Добавляем обработчики для кнопок масштаба
-  scaleSmallerButton.addEventListener('click', onScaleSmallerClick);
-  scaleBiggerButton.addEventListener('click', onScaleBiggerClick);
-
-  // Инициализируем слайдер эффектов
-  initEffectSlider();
-
-  // Добавляем обработчик изменения эффекта
-  effectsList.addEventListener('change', onEffectChange);
-
-  // Скрываем контейнер слайдера по умолчанию
-  effectLevelContainer.classList.add('hidden');
-
-  console.log('Редактор изображения инициализирован');
+  imgUploadInput.addEventListener('change', onImgUploadInputChange);
+  imgUploadCancel.addEventListener('click', onImgUploadCancelClick);
+  scaleControlSmaller.addEventListener('click', onScaleControlSmallerClick);
+  scaleControlBigger.addEventListener('click', onScaleControlBiggerClick);
+  effectsList.addEventListener('change', onEffectsListChange);
+  imgUploadForm.addEventListener('submit', onImgUploadFormSubmit);
 };
 
-export { initImageEditor, resetEditor };
+export {initImageEditor};

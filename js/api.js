@@ -1,39 +1,22 @@
-// Модуль для работы с удалённым сервером
-const API_URL = 'https://up.htmlacademy.ru'; // Замените на актуальный адрес из техзадания
+import {API_URL} from './constants.js';
 
-// Получение данных с сервера
-const getData = async () => {
-  try {
-    const response = await fetch(`${API_URL}/data`);
-
-    if (!response.ok) {
-      throw new Error(`Ошибка HTTP: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Ошибка при загрузке данных:', error);
-    throw error; // Пробрасываем ошибку дальше для обработки
+const loadPhotos = async () => {
+  const response = await fetch(API_URL.GET);
+  if (!response.ok) {
+    throw new Error(`Ошибка загрузки данных: ${response.status} ${response.statusText}`);
   }
+  return response.json();
 };
 
-// Отправка данных на сервер
-const sendData = async (formData) => {
-  try {
-    const response = await fetch(`${API_URL}/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Ошибка HTTP: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Ошибка при отправке данных:', error);
-    throw error;
+const uploadPhoto = async (formData) => {
+  const response = await fetch(API_URL.POST, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!response.ok) {
+    throw new Error(`Ошибка отправки данных: ${response.status} ${response.statusText}`);
   }
+  return response.json();
 };
 
-export { getData, sendData };
+export {loadPhotos, uploadPhoto};
