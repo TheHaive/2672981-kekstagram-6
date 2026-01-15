@@ -3,6 +3,15 @@ import { photos } from '.data.js';
 // В вашем основном файле (например, main.js)
 import { initThumbnails } from './thumbnail-renderer.js';
 import { openBigPicture, initBigPicture } from './big-picture.js';
+import { initFormValidation } from './js/form-validation.js';
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+  initFormValidation();
+
+  // Дополнительная инициализация, если нужно
+  console.log('Форма валидации инициализирована');
+});
 
 // Пример массива с данными фотографий (должен приходить с сервера или из другого модуля)
 const pictures = [
